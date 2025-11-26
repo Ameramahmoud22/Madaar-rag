@@ -1,0 +1,14 @@
+Django>=4.2
+djangorestframework
+djangorestframework-simplejwt
+channels==4.0.0
+channels-redis
+PyPDF2
+sentence-transformers
+faiss-cpu
+numpy
+python-dotenv
+openai
+uvicorn
+daphne
+redis
