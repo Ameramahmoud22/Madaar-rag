@@ -1,0 +1,21 @@
+                Mini RAG "Retrieval Augmented Generation "system with WebSocket streaming in Django
+
+المشروع ده عبارة عن:
+"شات بوت زي ChatGPT بس بيجاوب من ملف PDF اللي احنا رفعناه"
+يعني:
+
+اليوزر بيعمل login *
+ بيرفع PDF (مثلاً كتاب، تقرير، عقد...) **
+ البوت بيفهم محتوى الـ PDF ده***
+لما نساله سؤال -> بيجيب الإجابة من الـ PDF مش من معرفته العامة
+والإجابة بتيجلنا كلمات منفصلة (streaming) زي ChatGPT ما بيعمل بالضبط
+
+ده اسمه RAG = Retrieval Augmented Generation
+يعني: نجيب (Retrieve) المعلومة من الـ PDF، وبعدين نولد (Generate) إجابة باستخدام LLM
+
+
+
+
+
+
+
