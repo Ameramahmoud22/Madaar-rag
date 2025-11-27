@@ -1,2 +1,11 @@
 # Env files / secrets
 .env
+venv/
+__pycache__/
+
+
+*.pyc
+db.sqlite3
+
+vectorstore/
+media/
