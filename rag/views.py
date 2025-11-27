@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.parsers import MultiPartParser
 from django.conf import settings
 from django.contrib.auth import authenticate
-
+from PyPDF2 import PdfReader
 
 
 
@@ -44,6 +44,20 @@ class UploadPDFView(APIView):
             for chunk in file.chunks():
                 destination.write(chunk)
       
-      #return success response
+#return success response
         return Response({'message': 'PDF uploaded successfully , Processing ....'}, status=200)          
-                
+
+
+# extract text and create vectorstore
+        try:
+            reader = PdfReader(file_path)
+            text = ''
+            for page in reader.pages:
+                text += page.extract_text() + '\n'
+                if page_text :
+                    text += page_text + '\n'
+                    
+            if not text.strip():
+                return Response({'error': 'There is No text found in the PDF'}, status=400)
+                    
+                    
