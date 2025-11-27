@@ -42,3 +42,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "word": word + " "
             }))
         await asyncio.sleep(0.04)  # writing speed
+
+    # send done message
+        await self.send(text_data=json.dumps({
+            "type": "done"
+        }))
