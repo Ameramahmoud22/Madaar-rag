@@ -14,28 +14,29 @@ def get_rag_response(user, query):
     if not os.path.exists(vectorstore_path):
         return "No documents found for this user, please upload PDFs first."
 
-    # Load the FAISS vector store for this user only
-    vectorstore = FAISS.load_local(
-        folder_path=vectorstore_path,
-        embeddings=OpenAIEmbeddings(),
-        # must be added to upload FAISS vectorstore
-        allow_dangerous_deserialization=True
-    )
+    try:
+        # Load the FAISS vector store for this user only
+        vectorstore = FAISS.load_local(
+            folder_path=vectorstore_path,
+            embeddings=OpenAIEmbeddings(),
+            # must be added to upload FAISS vectorstore
+            allow_dangerous_deserialization=True
+        )
 
-    # Create a retriever from the vector store
-    retriever = vectorstore.as_retriever(
-        search_type="similarity", search_kwargs={"k": 3})
 
-    # Initialize the language model [chatgpt 3.5 turbo]
-    llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+        # Initialize the language model [chatgpt 3.5 turbo]
+        llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
 
-    # Create a RetrievalQA chain [which ask pdf first then ask llm]
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
-        return_source_documents=False)
+        # Create a RetrievalQA chain [which ask pdf first then ask llm]
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+            return_source_documents=False)
 
-    # Get the response from the chain [ask question then answer]
-    response = qa_chain.run(query)
-    return response
+        # Get the response from the chain [ask question then answer]
+        response = qa_chain.run(query)
+        return response
+
+    except Exception as e:
+        return f"An error occurred while processing your request: {str(e)}"
