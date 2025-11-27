@@ -7,8 +7,7 @@ from rest_framework.parsers import MultiPartParser
 from django.conf import settings
 from django.contrib.auth import authenticate
 from PyPDF2 import PdfReader
-
-
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # Login view
 class LoginView(APIView):
@@ -39,25 +38,36 @@ class UploadPDFView(APIView):
 # save file to media directory
         file_path = os.path.join(settings.MEDIA_ROOT, 'pdfs', file.name)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        
+
         with open(file_path, 'wb+') as destination:
             for chunk in file.chunks():
                 destination.write(chunk)
-      
-#return success response
-        return Response({'message': 'PDF uploaded successfully , Processing ....'}, status=200)          
 
-
-# extract text and create vectorstore
+# extract text from pdf
         try:
             reader = PdfReader(file_path)
             text = ''
             for page in reader.pages:
-                text += page.extract_text() + '\n'
-                if page_text :
+                page_text = page.extract_text()
+                if page_text:
                     text += page_text + '\n'
-                    
+
             if not text.strip():
                 return Response({'error': 'There is No text found in the PDF'}, status=400)
+        except Exception as e:
+            return Response({'error': f'Failed to process PDF: {str(e)}'}, status=500)
+
+        
                     
-                    
+        # split text
+        
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len,
+        )
+        chunk = splitter.split_text(text)
+        
+        
+        # return success response
+        return Response({'message': 'PDF uploaded successfully , Processing ....'}, status=200)
