@@ -1,6 +1,7 @@
 import json
+import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
-
+from .rag_logic import get_rag_response
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
 
@@ -17,12 +18,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
       # receive message from websocket
+
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data.get('message', '')
-
-        # Echo the received message back to the client
+        query = data.get("message", "").strip()
+        if not query:
+            return
+        
+        # Thinking message
         await self.send(text_data=json.dumps({
-            'type': 'reply',
-            'message': message
+            "type": "thinking",
+            "message": "Searching on your PDF"
         }))
+        
+        
+
+       
