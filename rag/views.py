@@ -3,12 +3,14 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+from rest_framework.parsers import MultiPartParser
 from django.conf import settings
 from django.contrib.auth import authenticate
-from rest_framework.permissions import IsAuthenticated
 
 
 
+
+# Login view
 class LoginView(APIView):
     def post(self, request):
         username = request.data.get('username')
@@ -23,7 +25,6 @@ class LoginView(APIView):
 # Upload pdf view
 vectorstore = None
 
-
 class UploadPDFView(APIView):
     def post(self, request):
         global vectorstore
@@ -34,3 +35,15 @@ class UploadPDFView(APIView):
 
         if not file.name.lower().endswith('.pdf'):
             return Response({'error': 'Only PDF files are supported'}, status=400)
+
+# save file to media directory
+        file_path = os.path.join(settings.MEDIA_ROOT, 'pdfs', file.name)
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        with open(file_path, 'wb+') as destination:
+            for chunk in file.chunks():
+                destination.write(chunk)
+      
+      #return success response
+        return Response({'message': 'PDF uploaded successfully , Processing ....'}, status=200)          
+                
