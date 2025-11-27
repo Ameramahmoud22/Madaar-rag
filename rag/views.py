@@ -8,8 +8,12 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
 
 # Login view
+
+
 class LoginView(APIView):
     def post(self, request):
         username = request.data.get('username')
@@ -23,6 +27,7 @@ class LoginView(APIView):
 
 # Upload pdf view
 vectorstore = None
+
 
 class UploadPDFView(APIView):
     def post(self, request):
@@ -54,20 +59,28 @@ class UploadPDFView(APIView):
 
             if not text.strip():
                 return Response({'error': 'There is No text found in the PDF'}, status=400)
-        except Exception as e:
-            return Response({'error': f'Failed to process PDF: {str(e)}'}, status=500)
 
-        
-                    
         # split text
-        
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len,
-        )
-        chunk = splitter.split_text(text)
-        
-        
-        # return success response
-        return Response({'message': 'PDF uploaded successfully , Processing ....'}, status=200)
+
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200,
+                length_function=len,
+            )
+            chunk = splitter.split_text(text)
+
+        # create embeddings and store in FAISS
+            embeddings = OpenAIEmbeddings()
+            global vectorstore
+            vectorstore = FAISS.from_texts(chunk, embeddings)
+            vectorstore.save_local("vectorstore")
+
+            return Response(
+                {'message': 'PDF uploaded successfully , Processing ....',
+                 'filename': file.name,
+                 'chunks': len(chunk),
+                 'pages': len(reader.pages)
+                 }
+            )
+        except Exception as e:
+            return Response({"error": "Failed to process PDF", "details": str(e)}, status=500)
