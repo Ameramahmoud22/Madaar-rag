@@ -36,4 +36,6 @@ def get_rag_response(user, query):
         retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
         return_source_documents=False)
 
-    
+    # Get the response from the chain [ask question then answer]
+    response = qa_chain.run(query)
+    return response
