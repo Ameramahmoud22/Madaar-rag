@@ -14,8 +14,93 @@
 يعني: نجيب (Retrieve) المعلومة من الـ PDF، وبعدين نولد (Generate) إجابة باستخدام LLM
 
 
+***************************************************************************************************
+Creating project Steps :
+1- Add in required apps: rest_framework, authtoken, channels, rag
+2- Add media folder for PDF uploads on [settings.py] file 
+
+
+3- Set template directory
+4- Enable TokenAuthentication
+
+5- Ran migrations
+6- Created superuser (amera/amera123)
+
+7- Create login endpoint that returns authentication token and Use Django built-in TokenAuthentication
+
+8.1-  PDF Upload (Part 1)
+- Create UploadPDFView with MultiPartParser
+- Validate that file exists and is PDF
+- Save the uploaded PDF to media directory
+- return success Response if uploaded successfully 
+
+8.2- PDF Processing (part 2)
+- Extracte text from PDF using PyPDF2 and Handle empty PDF with error response 
+- Split text into chunks (1000 chars, 200 overlap) using the built in [RecursiveCharacterTextSplitter]
+- Create OpenAI embeddings Built FAISS vector store and saved locally
+
+*******************************************************************************************************************************************************************************************************************
+                            Some important explanations to the rag views.py file 
+1- global vectorstore => بيخلّي المتغير vectorstore يتعرف عليه من بره الفانكشن عشان الـ WebSocket بعدين يقدر يقرأ منه بدون ما يعمل واحد جديد 
+
+2-  file = request.FILES.get('file') => بياخد الملف من الـ request  لأن الملفات بتتبعت في FILES مش في data 
+
+3-  التحقق من وجود الملف وإنه PDF لابد من الخطوة دى لانها حماية أساسية طبعا
+
+4-  os.makedirs(os.path.dirname(file_path), exist_ok=True) =>  بيعمل فولدر pdfs لو مش موجود ودى احد ال enhancments علشان ميعملش error لو الفولدر مش موجود
+
+4-  with open() ... file.chunks  بيحفظ الملف فى شكل اجزاء او قطع صغيرة علشان لو انت رفعت ملف كبير ميعملش لود على الميمورى ويحمله كله فيها 
+
+5- PdfReader(file_path) =>  بيفتح ال PDF ويقدر يقرأ منه باستخدام  مكتبة PyPDF2  
+
+6- page.extract_text() => بيطلّع الtext من كل صفحة أحيانًا بيطلع None لو الصفحة صورة بس مثلا او فاضيه  عشان كده بنعمل if
+6.2-  if not text.strip =>  لو ال PDF فاضي أو كله صور مثلا بنرفضه او نطلع ايرور انه مفهوش نص
+
+7-  RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200) => بيقطّع النص لقطع صغيرة عشان ال LLM يقدر يفهم السياق كويس 
+
+8-  OpenAIEmbeddings() => بيحوّل كل قطعةاو جزء قطعناه فوق لرقم كبير (vector 1536 رقم) وده اللي بيفهم بيه الكمبيوتر معنى الكلام زى ما احنا عارفين
+
+9- FAISS.from_texts(chunks, embeddings) => بيعمل زى داتابيز بس سريعة جدًا من ال vectors وبتكون أسرع بكتير من انك تسيرش في النص العادي قبل ما تحول ل vector
+
+10- vectorstore.save_local("vectorstore") => بيحفظ الدابيز دى على الديسك بتاعك في فولدر اسمه vectorstore اللى عملناه فى الاول فوق عشان الـ WebSocket يقدر يحمّله تاني من غير ما يعمل واحد جديد زى ما شرحنا
+
+11-  return Response({...}) => بيرجع JSON واضح 
+
+*******************************************************************************************************************************************************************************************************************
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*****************************************************************************************************
+My superuser :
+user = amera
+email = ameraelbassal552005@gmail.com
+pass = amera123
+******************************************************************************
 
 

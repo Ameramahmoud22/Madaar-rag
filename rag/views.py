@@ -38,7 +38,7 @@ class UploadPDFView(APIView):
             return Response({'error': 'No file uploaded'}, status=400)
 
         if not file.name.lower().endswith('.pdf'):
-            return Response({'error': 'Only PDF files are supported'}, status=400)
+            return Response({'error': 'Only PDF files are supported for uploading'}, status=400)
 
 # save file to media directory
         file_path = os.path.join(settings.MEDIA_ROOT, 'pdfs', file.name)
