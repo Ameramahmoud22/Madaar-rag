@@ -34,3 +34,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # Retrieve response from rag
         full_response = await get_rag_response(self.scope["user"], query)
+
+    # Apply streaming
+        for word in full_response.split():
+            await self.send(text_data=json.dumps({
+                "type": "stream",
+                "word": word + " "
+            }))
+        await asyncio.sleep(0.04)  # writing speed
