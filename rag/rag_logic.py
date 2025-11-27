@@ -22,9 +22,18 @@ def get_rag_response(user, query):
         allow_dangerous_deserialization=True
     )
 
- # Create a retriever from the vector store
+    # Create a retriever from the vector store
     retriever = vectorstore.as_retriever(
         search_type="similarity", search_kwargs={"k": 3})
 
     # Initialize the language model [chatgpt 3.5 turbo]
     llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+
+    # Create a RetrievalQA chain [which ask pdf first then ask llm]
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type="stuff",
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+        return_source_documents=False)
+
+    
