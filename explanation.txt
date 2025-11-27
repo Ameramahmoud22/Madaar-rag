@@ -39,6 +39,11 @@ Creating project Steps :
 - Split text into chunks (1000 chars, 200 overlap) using the built in [RecursiveCharacterTextSplitter]
 - Create OpenAI embeddings Built FAISS vector store and saved locally
 
+9- Development Media Serving
+- Adde static() for MEDIA_URL in rag_system/urls.py
+- This allows accessing uploaded PDFs directly in browser during development
+- Only active when DEBUG=True (standard Django practice)
+- Not needed in production
 *******************************************************************************************************************************************************************************************************************
                             Some important explanations to the rag views.py file 
 1- global vectorstore => بيخلّي المتغير vectorstore يتعرف عليه من بره الفانكشن عشان الـ WebSocket بعدين يقدر يقرأ منه بدون ما يعمل واحد جديد 
