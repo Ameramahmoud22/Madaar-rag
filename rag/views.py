@@ -9,8 +9,8 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # Login view
 
@@ -75,7 +75,7 @@ class UploadPDFView(APIView):
             chunks = splitter.split_text(text)
 
         # create embeddings and store in FAISS
-            embeddings = OpenAIEmbeddings()
+            embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
             global vectorstore
             vectorstore = FAISS.from_texts(chunks, embeddings)
 
