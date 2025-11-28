@@ -1,4 +1,5 @@
 django
+daphne
 djangorestframework
 channels
 channels-redis
