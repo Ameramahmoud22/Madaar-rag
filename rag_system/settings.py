@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     "rest_framework",
     "channels",
-
+    'channels_redis',
     "rag",
 
 
@@ -97,17 +97,24 @@ ASGI_APPLICATION = "rag_system.asgi.application"
 # Channels settings
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    },
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [os.getenv("REDIS_URL", "redis://127.0.0.1:6379")],
+        }
+    }
 }
 
 # REST FRAMEWORK SETTINGS
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+    ], 
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000"]
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
