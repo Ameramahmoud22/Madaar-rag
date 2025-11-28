@@ -73,10 +73,14 @@ class UploadPDFView(APIView):
             embeddings = OpenAIEmbeddings()
             global vectorstore
             vectorstore = FAISS.from_texts(chunk, embeddings)
-            vectorstore.save_local("vectorstore")
+            
+            #vectorstore for each user
+            os.makedirs("vectorstore", exist_ok=True)
+            user_vectorstore_path = f"vectorstore/{request.user.username}_vectorstore"
+            vectorstore.save_local(user_vectorstore_path)
 
             return Response(
-                {'message': 'PDF uploaded successfully , Processing ....',
+                {'message': 'PDF uploaded successfully ',
                  'filename': file.name,
                  'chunks': len(chunk),
                  'pages': len(reader.pages)
