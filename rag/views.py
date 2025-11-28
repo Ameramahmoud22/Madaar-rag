@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.conf import settings
 from django.contrib.auth import authenticate
 from PyPDF2 import PdfReader
@@ -15,6 +16,8 @@ from langchain_community.vectorstores import FAISS
 
 
 class LoginView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -30,6 +33,8 @@ vectorstore = None
 
 
 class UploadPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         global vectorstore
 
@@ -73,8 +78,8 @@ class UploadPDFView(APIView):
             embeddings = OpenAIEmbeddings()
             global vectorstore
             vectorstore = FAISS.from_texts(chunk, embeddings)
-            
-            #vectorstore for each user
+
+            # vectorstore for each user
             os.makedirs("vectorstore", exist_ok=True)
             user_vectorstore_path = f"vectorstore/{request.user.username}_vectorstore"
             vectorstore.save_local(user_vectorstore_path)
