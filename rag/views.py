@@ -72,12 +72,12 @@ class UploadPDFView(APIView):
                 chunk_overlap=200,
                 length_function=len,
             )
-            chunk = splitter.split_text(text)
+            chunks = splitter.split_text(text)
 
         # create embeddings and store in FAISS
             embeddings = OpenAIEmbeddings()
             global vectorstore
-            vectorstore = FAISS.from_texts(chunk, embeddings)
+            vectorstore = FAISS.from_texts(chunks, embeddings)
 
             # vectorstore for each user
             os.makedirs("vectorstore", exist_ok=True)
@@ -87,7 +87,7 @@ class UploadPDFView(APIView):
             return Response(
                 {'message': 'PDF uploaded successfully ',
                  'filename': file.name,
-                 'chunks': len(chunk),
+                 'chunks': len(chunks),
                  'pages': len(reader.pages)
                  }
             )
