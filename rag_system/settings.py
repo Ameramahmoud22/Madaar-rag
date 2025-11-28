@@ -108,7 +108,7 @@ CHANNEL_LAYERS = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-    ], 
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
@@ -158,6 +158,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 if OPENAI_API_KEY:
     import openai
     openai.api_key = OPENAI_API_KEY
+
+    os.environ["OPENAI_API_KEY"] = "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"
 
 
 # logging settings
