@@ -3,7 +3,7 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .rag_logic import get_rag_response
 import logging
-
+from channels.db import database_sync_to_async
 logger = logging.getLogger("django")
 
 
@@ -61,5 +61,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "type": "done"
         }))
 
-    async def disconnect(self, code):
+    @database_sync_to_async
+    def disconnect(self, code):
         logger.info("WebSocket disconnected: %s", code)
