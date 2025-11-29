@@ -1,70 +1,81 @@
-from multiprocessing import context
 import os
 import asyncio
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-from regex import search
-
-# Function called from websocket it take [user , question] and and return response from the user's pdf
 
 
 async def get_rag_response(user, query):
-
-    # the path we save on it the vectorstore for each user
+    """
+    Handles the entire RAG process using local Hugging Face models.
+    """
     vectorstore_path = f'vectorstores/{user.username}_vectorstore'
 
-    # check if the user has uploaded documents
     if not os.path.exists(vectorstore_path):
         return "No documents found for this user, please upload PDFs first."
 
-    # Load the FAISS vector store for this user only
-    def load_vs():
+    def load_vectorstore():
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         return FAISS.load_local(
             folder_path=vectorstore_path,
-            embeddings=OpenAIEmbeddings(),
+            embeddings=embeddings,
             allow_dangerous_deserialization=True,
         )
+
     try:
-        vs = await asyncio.to_thread(load_vs)
+        vectorstore = await asyncio.to_thread(load_vectorstore)
     except Exception as e:
         return f"Failed to load vectorstore: {e}"
 
-        # retieve the top 4 relevant documents from the vectorstore[pdf]
-    def search():
-        return vs.similarity_search(query, k=4)
+    def search_documents():
+        return vectorstore.similarity_search(query, k=4)
 
     try:
-        docs = await asyncio.to_thread(search)
+        docs = await asyncio.to_thread(search_documents)
     except Exception as e:
         return f"Search failed: {e}"
 
-    context = "\n\n".join(getattr(d, "page_content", str(d))
-                          for d in docs).strip()
+    context = "\n\n".join(doc.page_content for doc in docs).strip()
     if not context:
-        return "No relevant information found in the uploaded documents."
-        # Create a prompt template with context and question
-    prompt = (
+        return "No relevant information was found in the uploaded documents."
+
+    prompt_text = (
         "Answer the question using ONLY the context below. If the answer is not in the context, say you don't know.\n\n"
         f"Context:\n{context}\n\nQuestion: {query}\n\nAnswer:"
     )
 
-    # Initialize the language model [chatgpt 3.5 turbo] => ask chatgpt directly
-    llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+    def setup_and_invoke_llm():
+        """Sets up the local LLM pipeline and runs inference."""
+        # Define the local model to use for text generation
+        model_id = "google/flan-t5-small"
 
-    def call_llm():
-        # prefer predict if available; fall back to calling object
-        try:
-            return llm.predict(prompt)
-        except Exception:
-            res = llm(prompt)
-            return getattr(res, "content", getattr(res, "text", str(res)))
+        # Load the tokenizer and model
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
+
+        # Create a text-generation pipeline
+        pipe = pipeline(
+            "text2text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            max_new_tokens=256  # Controls the max length of the generated answer
+        )
+
+        # Wrap the pipeline in a LangChain object
+        llm = HuggingFacePipeline(pipeline=pipe)
+
+        # Invoke the model and return the string response
+        return llm.invoke(prompt_text)
 
     try:
-        answer = await asyncio.to_thread(call_llm)
+        # Run the entire blocking LLM setup and inference in a background thread
+        answer = await asyncio.to_thread(setup_and_invoke_llm)
     except Exception as e:
+        # Log the full error for debugging
+        print(f"LLM Exception: {e}")
         return f"LLM failure: {e}"
 
     return (answer or "").strip()
