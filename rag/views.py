@@ -26,19 +26,15 @@ class LoginView(APIView):
             token, _ = Token.objects.get_or_create(user=user)
             return Response({'token': token.key})
         return Response({'error': 'Invalid Credentials'}, status=400)
-       
 
 
 # Upload pdf view
-vectorstore = None
 
 
 class UploadPDFView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        global vectorstore
-
         file = request.FILES.get('file')
         if not file:
             return Response({'error': 'No file uploaded'}, status=400)
@@ -46,16 +42,17 @@ class UploadPDFView(APIView):
         if not file.name.lower().endswith('.pdf'):
             return Response({'error': 'Only PDF files are supported for uploading'}, status=400)
 
-# save file to media directory
-        file_path = os.path.join(settings.MEDIA_ROOT, 'pdfs', file.name)
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        # Save file to a temporary path
+        temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_pdfs')
+        os.makedirs(temp_dir, exist_ok=True)
+        file_path = os.path.join(temp_dir, file.name)
 
         with open(file_path, 'wb+') as destination:
             for chunk in file.chunks():
                 destination.write(chunk)
 
-# extract text from pdf
         try:
+            # Extract text from PDF
             reader = PdfReader(file_path)
             text = ''
             for page in reader.pages:
@@ -64,10 +61,9 @@ class UploadPDFView(APIView):
                     text += page_text + '\n'
 
             if not text.strip():
-                return Response({'error': 'There is No text found in the PDF'}, status=400)
+                return Response({'error': 'No text found in the PDF'}, status=400)
 
-        # split text
-
+            # Split text into chunks
             splitter = RecursiveCharacterTextSplitter(
                 chunk_size=1000,
                 chunk_overlap=200,
@@ -75,18 +71,23 @@ class UploadPDFView(APIView):
             )
             chunks = splitter.split_text(text)
 
-        # create embeddings and store in FAISS
+            # Create embeddings using HuggingFace
             embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-            global vectorstore
+
+            # Create FAISS vector store from text chunks
             vectorstore = FAISS.from_texts(chunks, embeddings)
 
-            # vectorstore for each user
-            os.makedirs("vectorstore", exist_ok=True)
-            user_vectorstore_path = f"vectorstore/{request.user.username}_vectorstore"
+            # Define the user-specific vectorstore path
+            user_vectorstore_dir = "vectorstores"  # Corrected directory name
+            os.makedirs(user_vectorstore_dir, exist_ok=True)
+            user_vectorstore_path = os.path.join(
+                user_vectorstore_dir, f"{request.user.username}_vectorstore")
+
+            # Save the vectorstore locally
             vectorstore.save_local(user_vectorstore_path)
 
             return Response(
-                {'message': 'PDF uploaded successfully ',
+                {'message': 'PDF processed and vector store created successfully',
                  'filename': file.name,
                  'chunks': len(chunks),
                  'pages': len(reader.pages)
@@ -94,3 +95,7 @@ class UploadPDFView(APIView):
             )
         except Exception as e:
             return Response({"error": "Failed to process PDF", "details": str(e)}, status=500)
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(file_path):
+                os.remove(file_path)
